@@ -1,6 +1,9 @@
 name: "Build"
 
-on: [push]
+on:
+  push:
+    branches:
+      - main
 
 jobs:
   build:
@@ -10,9 +13,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - run: nix flake check
-    - run: nix build .#bin.speedy .#bin.speedy-kpart
+    - run: nix build .#ubootVeyronSpeedy
     - uses: actions/upload-artifact@v4
       with:
-        path: |
-        result/u-boot-spi-rockchip.bin
-        result/u-boot.kpart
+        path: result/*
