@@ -16,7 +16,7 @@
       };
     in
     {
-      bin.speedy = plat.buildUBoot {
+      packages.x86_64-linux.ubootVeyronSpeedy = plat.buildUBoot {
         version = ubootVersion;
         src = ubootSrc;
         defconfig = "chromebook_speedy_defconfig";
@@ -34,13 +34,24 @@
           CONFIG_VIDEO_LOGO=n
         '';
         extraMeta.platforms = ["arm-none"];
-        patches = [];
         extraMakeFlags = [ "DTC=${pkgs.dtc}/bin/dtc" ];
-        filesToInstall = [ "u-boot.bin" "u-boot.dtb" ];
-      };
-      bin.speedy-kpart = pkgs.callPackage ./u-boot-kpart.nix {
-        kernel = (self.bin.speedy + "/u-boot.bin");
-        devicetree = (self.bin.speedy + "/u-boot.dtb");
+        patches = [];
+        filesToInstall = [ "u-boot-rockchip-spi.bin" "u-boot.kpart" ];
+        postBuild = ''
+          cp '${./image.its}' uboot.its
+          '${pkgs.ubootTools}/bin/mkimage' -f uboot.its u-boot-dtb.img
+          echo -e "\n" > dummy_config
+          echo -e "\n" > dummy_bootloader
+          '${pkgs.vboot_reference}/bin/vbutil_kernel' \
+            --pack u-boot.kpart \
+            --keyblock '${pkgs.vboot_reference + "/share/vboot/devkeys/kernel.keyblock"}' \
+            --signprivate '${pkgs.vboot_reference + "/share/vboot/devkeys/kernel_data_key.vbprivk"}' \
+            --version 1 \
+            --arch arm \
+            --config dummy_config \
+            --bootloader dummy_bootloader \
+            --vmlinuz u-boot-dtb.img
+        '';
       };
     };
 }
